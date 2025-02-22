@@ -1,0 +1,297 @@
+def getValueIfNotNullElseEmpty(value)
+    if($value != null) trim($value) else ""
+
+def ifEmptyMakeNull(value)
+    if($value == null or trim($value) == "") null else trim($value)
+
+def concat(value1, value2)
+    string(getValueIfNotNullElseEmpty($value1)) + string(getValueIfNotNullElseEmpty($value2))
+
+def lookUp(searchKey, lookupName, filterKey, output)
+    let query = { $filterKey : $searchKey }
+    Lookup($lookupName, $query, $output)
+
+def concatAndLookup(concatValue1, concatValue2, lookupName, filterKey, output)
+    let query = { $filterKey : concat($concatValue1, $concatValue2) }
+    Lookup($lookupName, $query, $output)
+
+def checkIfEmptyGetDefualtElseSearch(searchKey, defaultValue, lookupName, filterKey, output)
+    if($searchKey != null and $searchKey != "")
+        let query = { $filterKey : $searchKey }
+        Lookup($lookupName, $query, $output)
+    else
+        $defaultValue
+
+
+def getLevelOrDecreasing(interestRate)
+    if ($interestRate == "14%" or $interestRate == "15%" or $interestRate == "16%")
+        "16"
+    else "4"
+
+def getEvaluateLoanNature(moratorium)
+    if ($moratorium == "" or $moratorium == "0")
+        "04"
+    else "03"
+
+def getMoritoriumDuration(moratorium)
+    if ($moratorium == "" or $moratorium == "0")
+        $moratorium
+    else if (number($moratorium) > 0 and number($moratorium) <= 4)
+        string(number($moratorium) * 12)
+    else "NA"
+
+def evaluateIsInterestPaidDuringMoritorium(moratorium)
+    if (number($moratorium) > 0 and number($moratorium) <= 4)
+        "N"
+    else ""
+
+def getPartnerProduct(product)
+    if ($product == "") $product
+    else if ($product == "HDFC_LIFE" or $product == "HDFC_LIFE_BASE_CI") $product
+    else "NA"
+
+
+
+let result =
+{
+    "plan" : {
+        "policyNum" : "PP000254",
+        "subsidiaryNum" : .SUBSIDIARY_NUMBER_1,
+        "transactionType" : "A",
+        "planNum" : concatAndLookup(.PRODUCT_96, .MORATORIUM_64, "Lookup_PlanNo", "Concatenated Value", "Plan Number"),
+        "headCount" : ifEmptyMakeNull(.PART_OF_HEADCOUNT_31),
+        "productType" : "GCP2",
+        "jointBorrowerOption" : "SL", //confirm this value
+        "adjustedSumAssured" : "", //NOT_FOUND_IN_EXCEL
+        "productName" : null, //NOT_FOUND_IN_EXCEL
+        "policy" : null, //NOT_FOUND_IN_EXCEL
+        "subPolicy" : null, //NOT_FOUND_IN_EXCEL
+        "fscfsmCode" : null, //NOT_FOUND_IN_EXCEL
+        "policyIssueDate" : null, //NOT_FOUND_IN_EXCEL
+        "issueStatus" : null, //NOT_FOUND_IN_EXCEL
+        "specialScheme" : null //NOT_FOUND_IN_EXCEL
+    },
+    "member" : {
+        "memberNum" : ifEmptyMakeNull(.MEMBER_NUMBER_3),
+        "dependentNum" : checkIfEmptyGetDefualtElseSearch(.DEPENDENT_NUMBER_4, "00", "Lookup_DependentNumber", "DependentNumber", "Value"),
+        "clientNum" : ifEmptyMakeNull(.FSU_CLIENT_NUMBER_5),
+        "familyRelation" : "M",
+        "surname" : ifEmptyMakeNull(.SURNAME_10),
+        "givenName" : ifEmptyMakeNull(.GIVEN_NAME_11),
+        "salutation" : FindSalutation(getValueIfNotNullElseEmpty(.MARITAL_STATUS_14), getValueIfNotNullElseEmpty(.RELATIONSHIP_82), getValueIfNotNullElseEmpty(.SEX_13)),
+        "gender" : lookUp(.SEX_13,"Lookup_MemberGender", "Member Gender", "GA Gender Code"),
+        "maritalStatus" : FindMaritalStatus(getValueIfNotNullElseEmpty(.MARITAL_STATUS_14), getValueIfNotNullElseEmpty(.RELATIONSHIP_82)),
+        "address" : {
+            "addrLine" : ifEmptyMakeNull(.HSE_FLAT_15),
+            "street" : ifEmptyMakeNull(.STREET_16),
+            "area" : ifEmptyMakeNull(.AREA_17),
+            "city" : CityLookup(.PIN_CODE_19),
+            "pinCode" : ifEmptyMakeNull(.PIN_CODE_19),
+            "stateCode" : StateCodeLookup(.PIN_CODE_19),
+            "addrType" : "R"
+        },
+        "contact" : {
+            "homePhone" : ifEmptyMakeNull(.TELEPHONE_HOME_22),
+            "officePhone" : ifEmptyMakeNull(.TELEPHONE_OFFICE_23),
+            "mobilePhone" : ifEmptyMakeNull(.MOBILE_PHONE_27),
+            "email" : ifEmptyMakeNull(.INTERNET_ADDRESS_28)
+        },
+        "nationality" : lookUp(.NATIONALITY_24, "Lookup_Nationality", "Input", "GA Value"),
+        "occupationCode" : "STUDENT",
+        "countryOfResidence" : "India",
+        "dob" : ConvertDate(.DOB_26, "dd-MM-yyyy", "dd/MM/yyyy"),
+        "financials" : {
+            "taxIdNum" : ifEmptyMakeNull(.TAX_ID_NUMBER_29),
+            "annualSalary" : ifEmptyMakeNull(.SUM_ASSURED_30),  //convert to double using java
+            "pan" : null,   //NOT_FOUND_IN_EXCEL as well as not in java class
+            "utrNumber" : ifEmptyMakeNull(.UTR_89),
+            "bankName" : ifEmptyMakeNull(.BANK_NAME_91)
+        },
+        "employmentDetails" : {
+            "employeeNum" : ifEmptyMakeNull(.EMPLOYEE_NUMBER_6),
+            "occupationClass" : ifEmptyMakeNull(.OCCUPATIONAL_CLASS_25),
+            "industryType" : null,   //NOT_FOUND_IN_EXCEL
+            "dateOfEmp":null,
+            "contractHdrCompany":null
+        },
+        "education" : {
+            "qualification" : lookUp(.STUDENT_EDUCATION_33, "Lookup_Education", "Eductaion -Partner", "Inspire Eductaion"),
+            "countryOfStudy" : ifEmptyMakeNull(.COUNTRY_OF_STUDY_95)
+        },
+        "numBeneficiaries" : 1,
+        "zmbron" : "NEW",
+        "grossAnnualIncome" : ifEmptyMakeNull(.GROSS_YEARLY_INCOME_INR_34),  //convert to double
+        "residentialStatus" : ifEmptyMakeNull(.RESIDENT_STATUS_94),
+        "applicantType" : "PRIMARY BORROWER",
+        "consultantFLS" : {
+            "agencyCode" : null,  //NOT_FOUND_IN_EXCEL
+            "branchName" : ifEmptyMakeNull(.BRANCH_45),
+            "regionName" : ifEmptyMakeNull(.REGION_46),
+            "consultantName" : ifEmptyMakeNull(.CONSULTANT_NAME_47),
+            "consultantCode" : ifEmptyMakeNull(.CONSULTANT_CODE_48),
+            "iacaoEmployeeNumber" : ifEmptyMakeNull(.IA_CAO_EMP_NO_49),
+            "iacaoName" : ifEmptyMakeNull(.IA_CAO_NAME_50),
+            "bancaCode" : ifEmptyMakeNull(.BANCA_CODE_51),
+            "licenseNumber" : ifEmptyMakeNull(.LICENSE_NO_52),
+            "memberCommunicationType" : "A",
+            "appointeeOne" : "HO",
+            "appointeeTwo" : "EDUCATION LOAN - L2",
+            "bankAccountKey" : null,
+            "expiryDate" : ConvertDate(.EXPIRY_DATE_53, "dd-MM-yyyy", "dd/MM/yyyy")
+        },
+        "typeOfData" : ifEmptyMakeNull(.TYPE_OF_DATA_37),
+        "type" : ifEmptyMakeNull(.MEMBER_OLD_NEW_85),
+        "certificateNo" : ifEmptyMakeNull(.CERTIFICATENO_86),
+        "smqResponse" : ifEmptyMakeNull(._RESPONSE_TO_SMQ_88),
+        "loaderDate" : ConvertDate(.LOADER_DATE_92, "dd-MM-yyyy", "dd/MM/yyyy"),
+        "remarks" : ifEmptyMakeNull(.REMARK_93),
+        "prevPolicyJoinDate" : null,
+        "signature" : null,  //NOT_FOUND_IN_EXCEL
+        "voterId" : null,    //NOT_FOUND_IN_EXCEL
+        "merchantNavyIndicator" : null,  //NOT_FOUND_IN_EXCEL
+        "reasonForMedicals" : null,   //NOT_FOUND_IN_EXCEL
+        "mifIncorrectOrMissing" : null,   //NOT_FOUND_IN_EXCEL
+        "riMissing" : null,   //NOT_FOUND_IN_EXCEL
+        "memberStatus" : null,  //NOT_FOUND_IN_EXCEL
+        "remittanceDate" : null,   //NOT_FOUND_IN_EXCEL
+        "uniqueReferenceNumber" : null,   //NOT_FOUND_IN_EXCEL
+        "isEIAAvailable" : null,  //NOT_FOUND_IN_EXCEL
+        "eiaNum" : null,   //NOT_FOUND_IN_EXCEL
+        "terminationSequenceId" : ifEmptyMakeNull(.TERMINATE_REASON_35),
+        "refined" : ifEmptyMakeNull(.REFUND_INDICATOR_36),
+        "lifeType" : "M",
+        "zrsecno01" : null,
+        "scheduleNumber" : null,
+        "zynflag" : null,     //NOT_FOUND_IN_EXCEL
+        "smQuestionaire" : {    //NOT_FOUND_IN_EXCEL
+            "smq1" : null,
+            "smq2" : null,
+            "smq3" : null,
+            "smq4" : null,
+            "smq5" : null,
+            "smq6" : null,
+            "smq7" : null,
+            "smq8" : null
+        },
+        "healthDeclarationDate" : ConvertDate(.HEALTH_DECLARATION_DATE_44, "dd-MM-yyyy", "dd/MM/yyyy"),
+        "policyHolderHeight" : null,  //NOT_FOUND_IN_EXCEL
+        "policyHolderWeight" : null,  //NOT_FOUND_IN_EXCEL
+        "policyHolderType" : null,    //NOT_FOUND_IN_EXCEL
+        "policyHolderRelationship" : null,  //NOT_FOUND_IN_EXCEL
+        "relationWithBorrower" : null   //NOT_FOUND_IN_EXCEL
+    },
+    "proposal" : {
+        "effectiveDate" : ConvertDate(.LOAN_DISBURSEMENT_DATE_66, "dd-MM-yyyy", "dd/MM/yyyy"),
+        "parentFileNumber" : null, //NOT_FOUND_IN_EXCEL
+        "toiFileNumber" : null, //NOT_FOUND_IN_EXCEL
+        "policyCreationDate" : null,
+        "siFlag" : null, //NOT_FOUND_IN_EXCEL
+        "premiumMismatch" : null, //NOT_FOUND_IN_EXCEL
+        "premiumType" : "S",
+        "billingFrequency" : "00",
+        "riskTerm" : ifEmptyMakeNull(.RISK_TERM_IN_MONTHS_41),
+        "premiumTerm" :ifEmptyMakeNull(.PREMIUM_TERM_IN_MONTHS_42),
+        "riskStartDate" : ConvertDate(.LOAN_DISBURSEMENT_DATE_66, "dd-MM-yyyy", "dd/MM/yyyy"),
+        "proposalDate" : ConvertDate(.LOAN_DISBURSEMENT_DATE_66, "dd-MM-yyyy", "dd/MM/yyyy"),
+        "chargedPremium" : null,  //NOT_FOUND_IN_EXCEL
+        "collectedPremium" : null, //NOT_FOUND_IN_EXCEL
+        "differenceInPremium" : null, //NOT_FOUND_IN_EXCEL
+        "partnerCOINumber" : null, //NOT_FOUND_IN_EXCEL
+        "informedPremium" : ifEmptyMakeNull(.INFORM_PREMIUM_87),
+        "sumInsuredType" : ifEmptyMakeNull(.SUM_INSURED_TYPE_57),
+        "sumAssured" : ifEmptyMakeNull(.SUM_ASSURED_30),
+        "sumInsured" : null,  //EMPTY IN EXCEL
+        "mailingAddress_addrLine" : null,  //NOT_FOUND_IN_EXCEL from here
+        "mailingAddress_street" : null,
+        "mailingAddress_area" : null,
+        "mailingAddress_city" : null,
+        "mailingAddress_pinCode" : null,
+        "mailingAddress_stateCode" : null,
+        "mailingAddress_addrTyp" : null,
+        "insuranceGL" : null,
+        "insuranceTrftoGL" : null,
+        "insComp" : null,
+        "phyHOStatus" : null,
+        "phyHODate" : null,
+        "propertyArea" : null,
+        "constructionRate" : null,
+        "buildingType" : null,
+        "floorNumber" : null,
+        "buildingAge" : null,
+        "propertyInsurance" : null,
+        "glName" : null,
+        "additionalBenefitOption" : null,
+        "deathBenefit" : null,
+        "accidentalBenefit" : null,
+        "insuranceRequired" : null,
+        "submitInsurancesDetails" : null,
+        "proposerId" : null,
+        "clientIdentifier" : null,
+        "fundingType" : null,
+        "criticalIllnessTerm" : null,
+        "covidDeclaration" : null,
+        "charge" : null,
+        "collected" : null,
+        "diff" : null,
+        "anyHealthQuestions" : null  //NOT_FOUND_IN_EXCEL till here
+    },
+    "loan" : {
+        "decreaseFrequency" : "M",
+        "loanTerm" : ifEmptyMakeNull(.RISK_TERM_IN_MONTHS_41),
+        "loanAcctNum" : ifEmptyMakeNull(.LOAN_ACCOUNT_NO_59),
+        "isTopUp" : "N",
+        "levelOrDecreasing" : getLevelOrDecreasing(getValueIfNotNullElseEmpty(.INTEREST_RATE_61)),
+        "loanType" : "Education Loan",
+        "applicationNumber" : null, //NOT_FOUND_IN_EXCEL
+        "loanNature" : getEvaluateLoanNature(getValueIfNotNullElseEmpty(.MORATORIUM_64)),
+        "moritoriumDuration" : getMoritoriumDuration(getValueIfNotNullElseEmpty(.MORATORIUM_64)),
+        "isInterestPaidDuringMoritorium" : evaluateIsInterestPaidDuringMoritorium(getValueIfNotNullElseEmpty(.MORATORIUM_64)),
+        "loanDisbursementDate" : ConvertDate(.LOAN_DISBURSEMENT_DATE_66, "dd-MM-yyyy", "dd/MM/yyyy"),
+        "loanAmount" : ifEmptyMakeNull(.SUM_ASSURED_30),
+        "loanIntRate" : getLevelOrDecreasing(getValueIfNotNullElseEmpty(.INTEREST_RATE_61)),
+        "middleOfTheLoan" : "N",
+        "terminateReason" : ifEmptyMakeNull(.TERMINATE_REASON_35),
+        "transactionDate" : ConvertDate(.DATE_OF_TRANSACTION_90, "dd-MM-yyyy", "dd/MM/yyyy"),
+        "refundIndicator" : ifEmptyMakeNull(.REFUND_INDICATOR_36),
+        "partnerProductCode" : ifEmptyMakeNull(.PRODUCT_CODE_55),
+        "partnerProduct" : getPartnerProduct(getValueIfNotNullElseEmpty(.PRODUCT_96)),
+        "loanStatus" : null, //NOT_FOUND_IN_EXCEL
+        "dateOfDisbursal" : null, //NOT_FOUND_IN_EXCEL
+        "firstDisbursalDate" : null, //NOT_FOUND_IN_EXCEL
+        "sumPremiumAmount" : null, //NOT_FOUND_IN_EXCEL
+        "isDuplicate" : null, //NOT_FOUND_IN_EXCEL
+        "cuid" : null, //NOT_FOUND_IN_EXCEL
+        "portfolio" : null, //NOT_FOUND_IN_EXCEL
+        "oldProspectNumber" : null, //NOT_FOUND_IN_EXCEL
+        "revisedLoanAccountNumber" : null, //NOT_FOUND_IN_EXCEL
+        "originalLoanAccountNumber" : null //NOT_FOUND_IN_EXCEL
+    },
+
+    "beneficiaries" : [
+        {
+            "salutation" : FindSalutation(getValueIfNotNullElseEmpty(.MARITAL_STATUS_72), getValueIfNotNullElseEmpty(.RELATIONSHIP_82), getValueIfNotNullElseEmpty(.SEX_71)),
+            "surname" : ifEmptyMakeNull(.SURNAME_69),
+            "givenName" : ifEmptyMakeNull(.GIVEN_NAME_70),
+            "gender" : lookUp(.SEX_71, "Lookup_MemberGender", "Member Gender", "GA Gender Code"),
+            "maritalStatus" : FindMaritalStatus(getValueIfNotNullElseEmpty(.MARITAL_STATUS_72), getValueIfNotNullElseEmpty(.RELATIONSHIP_82)),
+            "address" : {
+                "addrLine" : ifEmptyMakeNull(.HSE_FLAT_73),
+                "street" : ifEmptyMakeNull(.STREET_74),
+                "area" : ifEmptyMakeNull(.AREA_75),
+                "city" : CityLookup(.ZIP_CODE_77),
+                "pinCode" : ifEmptyMakeNull(.ZIP_CODE_77),
+                "stateCode" : StateCodeLookup(.ZIP_CODE_77),
+                "addrType" : "R"
+            },
+            "dob" : ConvertDate(.DOB_79, "dd-MM-yyyy", "dd/MM/yyyy"),
+            "type" : lookUp(.BENEFICIARY_APOINTEE_PROPOSER_84, "Lookup_Appointee", "Appointee", "A"),
+            "nationality" : lookUp(.NATIONALITY_80, "Lookup_Nationality", "Input", "GA Value"),
+            "relationship" : lookUp(.RELATIONSHIP_82, "Lookup_Relationship", "RelationshipType", "Inspire Values"),
+            "sharePercent" : 100,
+            "signature" : null // --> only for beneficiaries[1]
+        }
+    ]
+
+}
+
+$result
