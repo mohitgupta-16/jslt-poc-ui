@@ -33,15 +33,24 @@ const fetchExcelData = async () => {
 };
 
 
-const uploadJsltFileData = async (file) => {
+const transformData = async (file) => {
   const formData = new FormData();
-  formData.append('file', file);
-  formData.append('VoId', '');
+  formData.append('jsltConfigTemplate', file);
+
+  const loaderSummaryId = '6843-250217-69FX';
+  const voId = "6c583b71-9508-4fef-9d03-574b7e42c7a3"
+  const userId = 'tho_cor147@hdfclife.com';
+
+  const url = `${API_URLS.BASE_URL}voId/${voId}/loaderSummaryId/${loaderSummaryId}/transform`;
 
   try {
-    const response = await fetch(API_URLS.POST_UPLOAD, {
+    const response = await fetch(url, {
       method: 'POST',
       body: formData,
+      headers: {
+              'User-ID': userId,
+              'Access-Control-Allow-Origin': '*'
+      },
     });
 
     if (response.ok) {
@@ -57,4 +66,4 @@ const uploadJsltFileData = async (file) => {
   }
 };
 
-export { fetchExcelData, uploadJsltFileData };
+export { fetchExcelData, transformData };

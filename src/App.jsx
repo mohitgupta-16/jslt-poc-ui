@@ -5,10 +5,11 @@ import prospectData from './datasets/prospectData.json';
 import jsltData from './datasets/jsltData.json';
 import JsltJsonEditor from './components/JsltJsonEditor.jsx';
 import jsltFunctionString from './datasets/jsltFunctionString.js';
-import { fetchExcelData, uploadJsltFileData } from './apis/api.js';
+import { fetchExcelData, transformData } from './apis/api.js';
 
 const App = () => {
   const [json, setJson] = useState(jsltData);
+  const [excelData, setExcelData] = useState([]);
   const [selectedRow, setSelectedRow] = useState(null);
   const [outputJson, setOutputJson] = useState(null);
   const [finalJsltFormattedString, setFinalJsltFormattedString] = useState("");
@@ -69,7 +70,7 @@ const App = () => {
     document.body.removeChild(a);
   }
 
-  const handleRun = (download) => {
+  const handleRun = async (download) => {
     const s = replaceSingleQuotesInJsonToString(json);
     const resultString = removeFunctionQuotesFromString(s);
     const finalJsltFormattedString = jsltFunctionString + resultString + '$result';
@@ -78,7 +79,12 @@ const App = () => {
     }
     console.log(finalJsltFormattedString);
     setFinalJsltFormattedString(finalJsltFormattedString);
-    setOutputJson(json);
+    const file = createFile(finalJsltFormattedString, 'transformation.jslt');
+    const response = await transformData(file);
+    if(response) {
+        console.log(response);
+        setOutputJson(response);
+    }
   };
 
   const textToStream = ` Output: {"response": \"policyNum\" : ifEmptyMakeNull(.POLICY_NUMBER_0)}`;
@@ -111,8 +117,11 @@ const App = () => {
 
     const fetchedData = await fetchExcelData(loaderSummaryId, partnerId, industryType, formatType, userId);
     if (fetchedData) {
-      console.log(fetchedData);
-      // setTableData(fetchedData); // You can set this if necessary
+//       console.log(fetchedData['rawMemberTable']['rawMemberRows'][0]);
+      let rawMemberData = fetchedData['rawMemberTable']['rawMemberRows'][0];
+      rawMemberData = rawMemberData.slice(1, rawMemberData.length);
+//       console.log(rawMemberData)
+      setExcelData(rawMemberData);
     }
   };
 
@@ -144,8 +153,8 @@ const App = () => {
                     onChange={() => handleRadioChange(index)}
                   />
                 </td>
-                {tableHeaders.map((header, headerIndex) => (
-                  <td key={headerIndex}>{headerData[header]}</td>
+                {excelData.map((data) => (
+                  <td>{data}</td>
                 ))}
               </tr>
             ))}
