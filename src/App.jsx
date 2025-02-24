@@ -11,15 +11,17 @@ const App = () => {
   const [json, setJson] = useState(jsltData);
   const [selectedRow, setSelectedRow] = useState(null);
   const [outputJson, setOutputJson] = useState(null);
-  const [tableData, setTableData] = useState([]);
   const [finalJsltFormattedString, setFinalJsltFormattedString] = useState("");
+  const [inputText, setInputText] = useState('');
+  const [streamedText, setStreamedText] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
 
   const tableHeaders = headerData;
 
   const removeFunctionQuotesFromString = (inputString) => {
-        const functionRegex = /"([^"]*\([^\)]*\)[^"]*)"/g;
-        return inputString.replace(functionRegex, (match, p1) => p1);
-      };
+    const functionRegex = /"([^"]*\([^\)]*\)[^"]*)"/g;
+    return inputString.replace(functionRegex, (match, p1) => p1);
+  };
 
   const replaceSingleQuotesInJsonToString = (jsonObj) => {
     const jsonString = JSON.stringify(jsonObj, null, 2);
@@ -51,50 +53,71 @@ const App = () => {
   };
 
   const createFile = (jsltString, fileName) => {
-      const blob = new Blob([jsltString], { type: 'application/json' });
-      return new File([blob], fileName, { type: 'application/json' })
+    const blob = new Blob([jsltString], { type: 'application/json' });
+    return new File([blob], fileName, { type: 'application/json' });
   }
 
   const downloadFile = (jsltString, fileName) => {
-      const blob = new Blob([jsltString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
+    const blob = new Blob([jsltString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
 
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
 
-  const handleRun = () => {
+  const handleRun = (download) => {
     const s = replaceSingleQuotesInJsonToString(json);
     const resultString = removeFunctionQuotesFromString(s);
     const finalJsltFormattedString = jsltFunctionString + resultString + '$result';
-//     downloadFile(finalJsltFormattedString, "data.jslt");
+    if (download) {
+      downloadFile(finalJsltFormattedString, "data.jslt");
+    }
     console.log(finalJsltFormattedString);
-    setFinalJsltFormattedString(finalJsltFormattedString)
+    setFinalJsltFormattedString(finalJsltFormattedString);
     setOutputJson(json);
   };
 
-// Load excel Data
+  const textToStream = ` Output: {"response": \"policyNum\" : ifEmptyMakeNull(.POLICY_NUMBER_0)}`;
+
+  const handleGenerate = () => {
+    if (!isStreaming && textToStream !== undefined) {
+      setIsStreaming(true);
+      let index = 0;
+
+      const interval = setInterval(() => {
+        if (index < textToStream.length) {
+          setStreamedText((prev) => {if(textToStream[index] != undefined)return prev + textToStream[index]});
+          index += 1;
+        } else {
+          clearInterval(interval);
+          setIsStreaming(false);
+        }
+      }, 50);
+    }
+  };
+
+
+  // Load excel Data
   const loadData = async () => {
-      const loaderSummaryId = '6843-250217-NYXY';
-      const partnerId = 'abcde';
-      const industryType = 'Tech';
-      const formatType = 'json';
-      const userId = 'user123';
+    const loaderSummaryId = '6843-250217-NYXY';
+    const partnerId = 'abcde';
+    const industryType = 'Tech';
+    const formatType = 'json';
+    const userId = 'user123';
 
-      const fetchedData = await fetchData(loaderSummaryId, partnerId, industryType, formatType, userId);
-      if (fetchedData) {
-          console.log(fetchedData)
-//         setTableData(fetchedData);
-      }
-    };
+    const fetchedData = await fetchExcelData(loaderSummaryId, partnerId, industryType, formatType, userId);
+    if (fetchedData) {
+      console.log(fetchedData);
+      // setTableData(fetchedData); // You can set this if necessary
+    }
+  };
 
-
-useEffect(() => {
-//     loadData();
+  useEffect(() => {
+    loadData(); // Calling the API to get excel data in table if needed
   }, []);
 
   return (
@@ -112,42 +135,20 @@ useEffect(() => {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>
-                <input
-                  type="radio"
-                  checked={selectedRow === 0}
-                  onChange={() => handleRadioChange(0)}
-                />
-              </td>
-              {tableHeaders.map((header, index) => (
-                <td key={index}>{headerData[header]}</td>
-              ))}
-            </tr>
-            <tr>
-              <td>
-                <input
-                  type="radio"
-                  checked={selectedRow === 1}
-                  onChange={() => handleRadioChange(1)}
-                />
-              </td>
-              {tableHeaders.map((header, index) => (
-                <td key={index}>{headerData[header]}</td>
-              ))}
-            </tr>
-            <tr>
-              <td>
-                <input
-                  type="radio"
-                  checked={selectedRow === 2}
-                  onChange={() => handleRadioChange(2)}
-                />
-              </td>
-              {tableHeaders.map((header, index) => (
-                <td key={index}>{headerData[header]}</td>
-              ))}
-            </tr>
+            {[0, 1, 2].map((index) => (
+              <tr key={index}>
+                <td>
+                  <input
+                    type="radio"
+                    checked={selectedRow === index}
+                    onChange={() => handleRadioChange(index)}
+                  />
+                </td>
+                {tableHeaders.map((header, headerIndex) => (
+                  <td key={headerIndex}>{headerData[header]}</td>
+                ))}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -172,9 +173,34 @@ useEffect(() => {
         </div>
       </div>
 
-      <button onClick={handleRun} className="runButton">
-        Run
-      </button>
+      <div className="button-container">
+        <button onClick={() => handleRun(true)} className="downloadButton">
+          Download JSLT Template
+        </button>
+
+        <button onClick={() => handleRun(false)} className="runButton">
+          Run
+        </button>
+      </div>
+
+      <div className="outputSection">
+        <label htmlFor="inputText">Enter your prompt:</label>
+        <input
+          id="inputText"
+          type="text"
+          value={inputText}
+          placeholder="Enter some text"
+          className="inputField"
+          onChange={(e) => setInputText(e.target.value)}
+        />
+        <textarea
+          value={streamedText}
+          className="outputField"
+          readOnly
+        />
+      </div>
+
+      <button onClick={handleGenerate} className="generateButton">Generate</button>
     </div>
   );
 };

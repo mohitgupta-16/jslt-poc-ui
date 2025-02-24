@@ -66,21 +66,43 @@
   overflow-y: scroll;
 }
 
+.button-container {
+  display: flex;
+  justify-content: space-between; /* Distribute buttons, one on left and other centered */
+  align-items: center; /* Vertically align items */
+  margin-top: 40px;
+}
+
+.downloadButton {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #FFCC00;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  margin-right: 20px; /* Space between buttons */
+}
+
+.downloadButton:hover {
+  background-color: #FFBB00;
+}
+
 .runButton {
   padding: 10px 20px;
-  margin-top: 40px;
   font-size: 16px;
   cursor: pointer;
   background-color: #2196F3;
   color: white;
   border: none;
   border-radius: 5px;
-  margin-bottom: 10px;
+  margin-right: 795px;
 }
 
 .runButton:hover {
   background-color: #1976D2;
 }
+
 
 .jsonOutput {
   flex: 1;
@@ -116,4 +138,50 @@
   margin-right: 10px;
   font-weight: bold;
   text-align: right;
+}
+
+.outputSection {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.outputSection label {
+  font-size: 16px;
+  margin-right: 10px;
+  font-weight: bold;
+}
+
+.inputField {
+  width: 80%;
+  padding: 10px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+.outputField {
+  width: 80%;
+  height: 150px;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  margin-bottom: 20px;
+  resize: none;
+}
+
+.generateButton {
+  padding: 10px 20px;
+  background-color: #4CAF50; /* Green color */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.generateButton:hover {
+  background-color: #45a049; /* Darker green on hover */
 }

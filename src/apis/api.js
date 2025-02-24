@@ -1,13 +1,21 @@
 import API_URLS from '../configs/apiUrls.js';
 
-const fetchExcelData = async (loaderSummaryId, partnerId, industryType, formatType, userId) => {
-  const url = `${API_URLS.GET_DATA}?loaderSummaryId=${loaderSummaryId}&partnerId=${partnerId}&industryType=${industryType}&formatType=${formatType}&userId=${userId}`;
+const fetchExcelData = async () => {
+  const loaderSummaryId = '6843-250217-69FX';
+  const partnerId = '68437580';
+  const industryType = 'Non-MFI';
+  const formatType = 'Education loan';
+  const userId = 'tho_cor147@hdfclife.com';
+
+  const url = `${API_URLS.BASE_URL}loaderSummaries/${loaderSummaryId}/rawMembers/download?partnerId=${partnerId}&industryType=${industryType}&formatType=${formatType}&pageNumber=0&pageSize=10`;
 
   try {
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'User-ID': userId,
+        'Access-Control-Allow-Origin': '*'
       },
     });
 
@@ -23,6 +31,7 @@ const fetchExcelData = async (loaderSummaryId, partnerId, industryType, formatTy
     return null;
   }
 };
+
 
 const uploadJsltFileData = async (file) => {
   const formData = new FormData();
