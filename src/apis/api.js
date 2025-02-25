@@ -66,4 +66,36 @@ const transformData = async (file) => {
   }
 };
 
-export { fetchExcelData, transformData };
+const generatePrompt = async (message) => {
+
+  const data = {
+    "message": message,
+  };
+const jsonData = JSON.stringify(data);
+console.log('sasasa',jsonData);
+
+  try {
+  console.log('API_URLS.POST_PROMPT',API_URLS.POST_PROMPT)
+    const response = await fetch(API_URLS.POST_PROMPT, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: jsonData,
+       headers: {
+                 'Accept': 'application/json',
+                  'Content-Type': 'application/json'
+            },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data;
+    } else {
+      console.error('Error:', response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error('Request failed', error);
+    return null;
+  }
+};
+export { fetchExcelData, transformData ,generatePrompt};

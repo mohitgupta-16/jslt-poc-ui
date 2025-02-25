@@ -5,7 +5,7 @@ import prospectData from './datasets/prospectData.json';
 import jsltData from './datasets/jsltData.json';
 import JsltJsonEditor from './components/JsltJsonEditor.jsx';
 import jsltFunctionString from './datasets/jsltFunctionString.js';
-import { fetchExcelData, transformData } from './apis/api.js';
+import { fetchExcelData, transformData, generatePrompt } from './apis/api.js';
 
 const App = () => {
   const [json, setJson] = useState(jsltData);
@@ -85,6 +85,11 @@ const App = () => {
         console.log(response);
         setOutputJson(response);
     }
+  };
+
+  const handlePrompt =async () => {
+    const response = await generatePrompt(inputText);
+    console.log(response);
   };
 
   const textToStream = ` Output: {"response": \"policyNum\" : ifEmptyMakeNull(.POLICY_NUMBER_0)}`;
@@ -200,8 +205,11 @@ const App = () => {
           value={inputText}
           placeholder="Enter some text"
           className="inputField"
-          onChange={(e) => setInputText(e.target.value)}
+          onChange={(e) => setInputText(e.target.value) }
         />
+        <div className="button-container">
+            <button onClick={() => handlePrompt()} className="runButton"> Prompt</button>
+        </div>
         <textarea
           value={streamedText}
           className="outputField"
